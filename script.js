@@ -5,13 +5,13 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 // --- 1. 配置與常數 ---
 const emotionMap = {
    "極度厭世": "red", "腦袋空白": "red", "煩鼠了！": "red", "爆炸吧！": "red", "壓力好大": "red", "我好累 ！": "red", "想哭": "red",
-    "積極向上": "yellow", "超有元氣": "yellow", "滿血復活～": "yellow", "有小確辛～": "yellow", "我好開勳": "yellow", "有好事發生:D": "yellow",
+   "衝鴨！": "yellow", "積極向上": "yellow", "超有元氣": "yellow", "滿血復活～": "yellow", "有小確辛～": "yellow", "我好開勳": "yellow", "有好事發生:D": "yellow",
     "還撐得住": "green", "心悶悶": "green", "待機中。。。": "green",
     "卡卡不順": "green", "我是鹹魚：D": "green", "今天不順：/": "green", "想當廢廢XD": "green"
 };
 
 const colors = {
-    red: "#fa7e7e",
+    red: "#f43f3f",
     green: "#fff30e",
     yellow: "#00ff00",
     default: "rgba(253, 164, 10, 0.73)"
@@ -77,6 +77,12 @@ function resize() {
 
     scaleFactor = Math.min(width, height) / 1000;
     if (scaleFactor < 0.5) scaleFactor = 0.5;
+    // --- 修正處：手機端大小補償 ---
+    if (width < 600) { 
+        scaleFactor *= 1.2; // 如果覺得手機球太小，把 1.2 調大；覺得太大就調小（例如 1.0）
+    }
+    
+    balls.forEach(ball => ball.recalculateSize());
 
     balls.forEach(ball => {
         ball.recalculateSize();
@@ -123,7 +129,7 @@ class Ball {
         
         this.isClicked = false;
         this.timer = null;
-        this.sizeVar = 0.9 + Math.random() * 0.4;
+        this.sizeVar = 0.8 + Math.random() * 0.3;
         
         // 初始旋轉角度
         this.angle = Math.random() * Math.PI * 2;
@@ -143,8 +149,9 @@ class Ball {
         this.dy = (Math.random() - 0.5) * speedBase;
     }
     recalculateSize() {
+        const isMobile = window.innerWidth < 600; // 判斷是否為手機
         if (this.isImage) {
-            this.radius = 75 * scaleFactor * this.sizeVar;
+            this.radius = (isMobile ? 45 : 90) * scaleFactor * this.sizeVar;
             // 關鍵：根據 Aspect Ratio 計算繪製寬高，確保不變形
             // 我們將 radius 當作圖片「長邊」的一半
             if (this.aspectRatio > 1) { 
@@ -158,8 +165,10 @@ class Ball {
             }
         } else {
             // 文字球尺寸
-            this.radius = 100 * scaleFactor * this.sizeVar;
-            if (this.radius < 45) this.radius = 45;
+            this.radius = (isMobile ? 50 : 110) * scaleFactor * this.sizeVar;
+            if (this.radius < 35) this.radius = 35;
+            const minLimit = isMobile ? 30 : 45;
+        if (this.radius < minLimit) this.radius = minLimit;
         }
     }
 
@@ -177,7 +186,7 @@ class Ball {
             // --- 繪製圖片球 ---
             ctx.translate(this.x, this.y);
             ctx.rotate(this.angle);
-            ctx.globalAlpha = 0.4; // 圖片半透明，不干擾文字
+            ctx.globalAlpha = 0.9; // 圖片半透明，不干擾文字
             const drawSize = this.radius * 2;
             ctx.drawImage(this.img, -this.drawWidth / 2, -this.drawHeight / 2, this.drawWidth, this.drawHeight);
         } else {
@@ -318,7 +327,7 @@ async function init() {
     await Promise.all(loadDeco);
     
     // 2. 加入圖片球 (現在會參與碰撞)
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 10; i++) {
         if (loadedDecoImages.length > 0) {
             balls.push(new Ball({
                 img: loadedDecoImages[Math.floor(Math.random() * loadedDecoImages.length)]

@@ -89,8 +89,8 @@ canvas {
     right: 10px;
     width: fit-content; 
     min-width: 150px;
-    color: rgb(226, 92, 40);
-    background: rgba(243, 246, 243, 0.6);
+    color: rgb(0, 0, 0);
+    background: rgba(235, 241, 235, 0.6);
     padding: 20px 25px;
     border-radius: 10px;
     

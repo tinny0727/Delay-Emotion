@@ -4,13 +4,13 @@ body, html {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background-color: #339933; 
+    background-color: #484848; 
     font-family: "Microsoft JhengHei", sans-serif;
     font-size: small;
 }
 body{
     background-image: url(image/筆記本.png);
-    background-size:contain;
+    background-size:cover;
     background-position: center;
     background-repeat: no-repeat;
     background-attachment: fixed;
@@ -19,7 +19,7 @@ body{
     /* 手機版背景 (螢幕寬度小於 768px 時) */
 @media (max-width: 768px) {
     body {
-        background-image: url(image/手機.png); /* 你的長版背景圖 */
+        background-image: url(image/筆記本.png); /* 你的長版背景圖 */
         /* 如果希望背景隨內容拉長，可將 fixed 改為 scroll */
         background-attachment: fixed; 
         background-size: cover;

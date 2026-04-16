@@ -14,7 +14,7 @@ const colors = {
     red: "#f43f3f",
     green: "#fff30e",
     yellow: "#00ff00",
-    default: "rgba(253, 164, 10, 0.73)"
+    default: "#b0b0b0"
 };
 
 const decorativeImagesConfig = [

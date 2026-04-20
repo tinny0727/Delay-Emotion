@@ -4,26 +4,23 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 // --- 1. 配置與常數 ---
 const emotionMap = {
-   "極度厭世": "red", "腦袋空白": "red", "煩鼠了！": "red", "爆炸吧！": "red", "壓力好大": "red", "我好累 ！": "red", "想哭": "red",
-   "衝鴨！": "yellow", "積極向上": "yellow", "超有元氣": "yellow", "滿血復活～": "yellow", "有小確辛～": "yellow", "我好開勳": "yellow", "有好事發生:D": "yellow",
-    "還撐得住": "green", "心悶悶": "green", "待機中。。。": "green",
-    "卡卡不順": "green", "我是鹹魚：D": "green", "今天不順：/": "green", "想當廢廢XD": "green"
+   "我好餓...": "red", "極度 厭世": "red", "腦袋空白": "red", "煩鼠了！": "red", "爆炸吧！": "red", "壓力好大": "red", "我好累！": "red", "想哭": "red",
+   "衝鴨！": "yellow", "積極 向上": "yellow", "超有元氣": "yellow", "滿血復活～": "yellow", "有小確辛～": "yellow", "我好開勳": "yellow", "有好事 發生:D": "yellow",
+    "還撐得住": "green", "心悶悶": "green", "待機中...": "green",
+    "卡卡不順": "green", "我是 鹹魚：D": "green", "今天不順：/": "green", "想當廢廢XD": "green"
 };
 
 const colors = {
     red: "#f43f3f",
     green: "#fff30e",
     yellow: "#00ff00",
-    default: "#b0b0b0"
+    default: "rgba(253, 164, 10, 0.73)" // 橘黃半透明
 };
 
-const decorativeImagesConfig = [
-    "image/cat.png",
-    "image/dog.png",
-    "image/ret.png"
-];
+// 裝飾圖片路徑 (選配，如果要貓咪狗狗圖片會轉動請填寫路徑)
+const decorativeImagesConfig = [];
 
-let balls = []; // 現在所有的東西（文字球、圖片球）都在這裡
+let balls = []; 
 let particles = [];
 let loadedDecoImages = [];
 let stats = { red: 0, green: 0, yellow: 0 };
@@ -65,10 +62,9 @@ function playBackgroundPiano() {
 }
 
 function resize() {
-    const scale = window.devicePixelRatio || 1;
     const width = window.innerWidth;
     const height = window.innerHeight;
-
+    const scale = window.devicePixelRatio || 1;
     canvas.width = width * scale;
     canvas.height = height * scale;
     ctx.scale(scale, scale);
@@ -76,25 +72,190 @@ function resize() {
     canvas.style.height = height + 'px';
 
     scaleFactor = Math.min(width, height) / 1000;
-    if (scaleFactor < 0.5) scaleFactor = 0.5;
-    // --- 修正處：手機端大小補償 ---
-    if (width < 600) { 
-        scaleFactor *= 1.2; // 如果覺得手機球太小，把 1.2 調大；覺得太大就調小（例如 1.0）
-    }
+    if (width < 600) scaleFactor *= 1.2; 
     
     balls.forEach(ball => ball.recalculateSize());
-
-    balls.forEach(ball => {
-        ball.recalculateSize();
-        if (ball.x + ball.radius > width) ball.x = width - ball.radius;
-        if (ball.y + ball.radius > height) ball.y = height - ball.radius;
-        if (ball.x - ball.radius < 0) ball.x = ball.radius;
-        if (ball.y - ball.radius < 0) ball.y = ball.radius;
-    });
 }
 window.addEventListener('resize', resize);
 
 // --- 3. 類別定義 ---
+class Ball {
+    constructor(config) {
+        this.isImage = !!config.img;
+        this.word = config.word || "";
+        this.img = config.img || null;
+        this.type = emotionMap[this.word] || "default";
+        this.isClicked = false;
+        this.timer = null;
+        this.sizeVar = 0.8 + Math.random() * 0.3;
+        
+        // 自轉屬性
+        this.angle = Math.random() * Math.PI * 2;
+        this.rotationSpeed = (Math.random() - 0.5) * 0.012; 
+        
+        // --- 形狀機率設定 ---
+        const shapeRoll = Math.random();
+        if (shapeRoll < 0.5) {
+            this.shapeType = 1; // 圓角矩形 (50%)
+        } else if (shapeRoll < 0.75) {
+            this.shapeType = 0; // 圓形 (25%)
+        } else {
+            this.shapeType = 3; // 圓潤雲朵 (25%)
+        }
+
+        if (this.isImage) this.aspectRatio = this.img.width / this.img.height;
+
+        this.radius = 10;
+        this.recalculateSize();
+        
+        // 全螢幕分佈
+        this.x = Math.random() * (window.innerWidth - this.radius * 2) + this.radius;
+        this.y = Math.random() * (window.innerHeight - this.radius * 2) + this.radius;
+        
+        this.dx = (Math.random() - 0.5) * 1.0;
+        this.dy = (Math.random() - 0.5) * 1.0;
+    }
+
+    recalculateSize() {
+        const isMobile = window.innerWidth < 600;
+        if (this.isImage) {
+            this.radius = (isMobile ? 45 : 80) * scaleFactor * this.sizeVar;
+            if (this.aspectRatio > 1) { 
+                this.drawWidth = this.radius * 2;
+                this.drawHeight = this.drawWidth / this.aspectRatio;
+            } else { 
+                this.drawHeight = this.radius * 2;
+                this.drawWidth = this.drawHeight * this.aspectRatio;
+            }
+        } else {
+            // 文字球基礎尺寸
+            let baseRad = isMobile ? 55 : 100;
+            if(this.shapeType === 3) baseRad *= 1.1; // 雲朵稍微放大，內部空間才夠
+            
+            this.radius = baseRad * scaleFactor * this.sizeVar;
+            const minLimit = isMobile ? 32 : 45;
+            if (this.radius < minLimit) this.radius = minLimit;
+        }
+    }
+
+    // --- 形狀繪製輔助函式 (邊緣修飾核心) ---
+    
+    // 1. 圓角矩形 (圓角正方) - 修飾為較大的圓角 radius
+    drawRoundedRect(ctx, x, y, width, height, radius) {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + width - radius, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+        ctx.lineTo(x + width, y + height - radius);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        ctx.lineTo(x + radius, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
+    }
+
+    // 2. 圓潤雲朵 (Bezier Curve 修飾版本，邊緣乾淨不尖銳)
+    drawCloud(ctx, r) {
+        ctx.beginPath();
+        // 將原點移動到雲朵中央偏下
+        ctx.translate(0, r * 0.1); 
+        
+        // 使用三次貝茲曲線繪製六個圓弧，構成乾淨的雲朵
+        ctx.moveTo(-r * 0.8, r * 0.2); 
+        
+        // 底部
+        ctx.bezierCurveTo(-r * 1.1, r * 0.8, r * 1.1, r * 0.8, r * 0.8, r * 0.2);
+        // 右側圓弧
+        ctx.bezierCurveTo(r * 1.3, r * 0.1, r * 1.1, -r * 0.6, r * 0.6, -r * 0.5);
+        // 頂部圓弧
+        ctx.bezierCurveTo(r * 0.5, -r * 0.9, -r * 0.5, -r * 0.9, -r * 0.6, -r * 0.5);
+        // 左側圓弧
+        ctx.bezierCurveTo(-r * 1.1, -r * 0.6, -r * 1.3, r * 0.1, -r * 0.8, r * 0.2);
+
+        ctx.closePath();
+    }
+
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y); // 移動座標原點到球心
+        
+        if (this.isImage) {
+            ctx.rotate(this.angle); // 圖片自轉
+            ctx.globalAlpha = 0.8;
+            ctx.drawImage(this.img, -this.drawWidth / 2, -this.drawHeight / 2, this.drawWidth, this.drawHeight);
+        } else {
+            // 形狀背景自轉
+            ctx.rotate(this.angle); 
+
+            if (this.isClicked) {
+                ctx.shadowBlur = 15 * scaleFactor;
+                ctx.shadowColor = colors[this.type];
+            }
+            ctx.fillStyle = this.isClicked ? colors[this.type] : colors.default;
+            ctx.strokeStyle = "rgba(255,255,255,0.4)"; // 乾淨的白色邊框
+            ctx.lineWidth = 2.5; // 稍微加粗邊框，更有質感
+
+            // --- 繪製形狀 ---
+            switch (this.shapeType) {
+                case 0: // 圓形
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                    ctx.fill(); ctx.stroke();
+                    break;
+                case 1: // 圓角正方 (使用 radius 的 1.6 倍作為正方形寬高)
+                    const side = this.radius * 1.7;
+                    // 使用半徑的 25% 作為圓角半徑，看起來更圓潤
+                    this.drawRoundedRect(ctx, -side/2, -side/2, side, side, side * 0.25);
+                    ctx.fill(); ctx.stroke();
+                    break;
+                case 3: // 圓潤雲朵 (內部有 save/restore 處理 translate)
+                    ctx.save();
+                    this.drawCloud(ctx, this.radius);
+                    ctx.fill(); ctx.stroke();
+                    ctx.restore();
+                    break;
+            }
+            
+            // --- 繪製文字 (文字保持水平，不跟著形狀轉，易讀性高) ---
+            ctx.shadowBlur = 0;
+            // 雲朵文字區塊需要稍微縮小字體
+            let fontMult = 0.3;
+            if(this.shapeType === 3) fontMult = 0.28;
+            
+            const fontSize = Math.floor(this.radius * fontMult);
+            ctx.fillStyle = this.isClicked ? "#1a1a2e" : "white";
+            ctx.font = `bold ${fontSize}px "Microsoft JhengHei", sans-serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            // 文字分行處理 (利用空格)
+            const lines = this.word.split(' ');
+            const lineHeight = fontSize * 1.25;
+            const startY = -((lines.length - 1) * lineHeight) / 2;
+            lines.forEach((line, i) => {
+                // 如果是雲朵，文字整體上移一點點
+                let textY = startY + i * lineHeight;
+                if(this.shapeType === 3) textY -= this.radius * 0.05;
+                ctx.fillText(line, 0, textY);
+            });
+        }
+        ctx.restore();
+    }
+
+    update() {
+        if (this.x + this.radius > window.innerWidth) { this.x = window.innerWidth - this.radius; this.dx *= -1; }
+        else if (this.x - this.radius < 0) { this.x = this.radius; this.dx *= -1; }
+        if (this.y + this.radius > window.innerHeight) { this.y = window.innerHeight - this.radius; this.dy *= -1; }
+        else if (this.y - this.radius < 0) { this.y = this.radius; this.dy *= -1; }
+        
+        this.x += this.dx; this.y += this.dy;
+        this.angle += this.rotationSpeed; // 角度隨時間增加
+        this.draw();
+    }
+}
+
+// --- 4. 粒子與物理 (保持不變) ---
 class Particle {
     constructor(x, y, color) {
         this.x = x; this.y = y; this.color = color;
@@ -120,124 +281,14 @@ class Particle {
     }
 }
 
-class Ball {
-    constructor(config) {
-        this.isImage = !!config.img;
-        this.word = config.word || "";
-        this.img = config.img || null;
-        this.type = emotionMap[this.word] || "default";
-        
-        this.isClicked = false;
-        this.timer = null;
-        this.sizeVar = 0.8 + Math.random() * 0.3;
-        
-        // 初始旋轉角度
-        this.angle = Math.random() * Math.PI * 2;
-        
-        if (this.isImage) {
-            this.aspectRatio = this.img.width / this.img.height;
-        }
-
-        this.radius = 10;
-        this.recalculateSize();
-        
-        this.x = Math.random() * (window.innerWidth - this.radius * 2) + this.radius;
-        this.y = Math.random() * (window.innerHeight - this.radius * 2) + this.radius;
-        
-        const speedBase = 1.1; 
-        this.dx = (Math.random() - 0.5) * speedBase;
-        this.dy = (Math.random() - 0.5) * speedBase;
-    }
-    recalculateSize() {
-        const isMobile = window.innerWidth < 600; // 判斷是否為手機
-        if (this.isImage) {
-            this.radius = (isMobile ? 45 : 90) * scaleFactor * this.sizeVar;
-            // 關鍵：根據 Aspect Ratio 計算繪製寬高，確保不變形
-            // 我們將 radius 當作圖片「長邊」的一半
-            if (this.aspectRatio > 1) { 
-                // 橫向圖片 (寬 > 高)
-                this.drawWidth = this.radius * 2;
-                this.drawHeight = this.drawWidth / this.aspectRatio;
-            } else { 
-                // 直向圖片 (高 >= 寬)
-                this.drawHeight = this.radius * 2;
-                this.drawWidth = this.drawHeight * this.aspectRatio;
-            }
-        } else {
-            // 文字球尺寸
-            this.radius = (isMobile ? 50 : 110) * scaleFactor * this.sizeVar;
-            if (this.radius < 35) this.radius = 35;
-            const minLimit = isMobile ? 30 : 45;
-        if (this.radius < minLimit) this.radius = minLimit;
-        }
-    }
-
-    reset() {
-        if (this.isClicked) {
-            this.isClicked = false;
-            if (stats[this.type] > 0) stats[this.type]--;
-            updateDashboard();
-        }
-    }
-
-    draw() {
-        ctx.save();
-        if (this.isImage) {
-            // --- 繪製圖片球 ---
-            ctx.translate(this.x, this.y);
-            ctx.rotate(this.angle);
-            ctx.globalAlpha = 0.9; // 圖片半透明，不干擾文字
-            const drawSize = this.radius * 2;
-            ctx.drawImage(this.img, -this.drawWidth / 2, -this.drawHeight / 2, this.drawWidth, this.drawHeight);
-        } else {
-            // --- 繪製文字球 ---
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-            
-            if (this.isClicked) {
-                ctx.shadowBlur = 20 * scaleFactor;
-                ctx.shadowColor = colors[this.type];
-            }
-            ctx.fillStyle = this.isClicked ? colors[this.type] : colors.default;
-            ctx.strokeStyle = "rgba(255,255,255,0.3)";
-            ctx.lineWidth = 2;
-            ctx.fill(); 
-            ctx.stroke();
-            
-            ctx.shadowBlur = 0;
-            const fontSize = Math.floor(this.radius * 0.32);
-            ctx.fillStyle = this.isClicked ? "#1a1a2e" : "white";
-            ctx.font = `bold ${fontSize}px "Microsoft JhengHei", Arial, sans-serif`;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(this.word, this.x, this.y);
-        }
-        ctx.restore();
-    }
-
-    update() {
-        if (this.x + this.radius > window.innerWidth) { this.x = window.innerWidth - this.radius; this.dx *= -1; }
-        else if (this.x - this.radius < 0) { this.x = this.radius; this.dx *= -1; }
-        if (this.y + this.radius > window.innerHeight) { this.y = window.innerHeight - this.radius; this.dy *= -1; }
-        else if (this.y - this.radius < 0) { this.y = this.radius; this.dy *= -1; }
-        
-        this.x += this.dx; 
-        this.y += this.dy;
-        
-        if (this.isImage) this.angle += this.rotationSpeed;
-        
-        this.draw();
-    }
-}
-
-// --- 4. 物理處理 ---
 function resolveCollisions() {
     for (let i = 0; i < balls.length; i++) {
         for (let j = i + 1; j < balls.length; j++) {
             const b1 = balls[i], b2 = balls[j];
             const dx = b2.x - b1.x, dy = b2.y - b1.y;
             const distance = Math.hypot(dx, dy);
-            const minDistance = b1.radius + b2.radius;
+            // 碰撞半徑稍微放大一點，減少複雜形狀重疊的感覺
+            const minDistance = (b1.radius + b2.radius) * 1.02;
             if (distance < minDistance) {
                 const overlap = (minDistance - distance) + 0.1;
                 const nx = dx / distance, ny = dy / distance;
@@ -254,13 +305,13 @@ function resolveCollisions() {
     }
 }
 
+// --- 5. 主迴圈與啟動 ---
 function updateDashboard() {
     if (document.getElementById('count-red')) document.getElementById('count-red').innerText = stats.red;
     if (document.getElementById('count-green')) document.getElementById('count-green').innerText = stats.green;
     if (document.getElementById('count-yellow')) document.getElementById('count-yellow').innerText = stats.yellow;
 }
 
-// --- 5. 主迴圈與啟動 ---
 function animate() {
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight); 
     resolveCollisions();
@@ -278,47 +329,32 @@ const handleAction = (clientX, clientY) => {
     const mouseX = clientX - rect.left;
     const mouseY = clientY - rect.top;
     
-    balls.forEach(ball => {
-        // 只有「文字球」可以被點擊互動
+    for (let i = balls.length - 1; i >= 0; i--) {
+        const ball = balls[i];
         if (!ball.isImage && !ball.isClicked) {
-            if (Math.hypot(ball.x - mouseX, ball.y - mouseY) < ball.radius) {
+            // 點擊檢測 (使用半徑，稍微縮小檢測區域以貼合雲朵和正方形)
+            if (Math.hypot(ball.x - mouseX, ball.y - mouseY) < ball.radius * 0.95) {
                 ball.isClicked = true;
-                stats[ball.type]++; 
-                updateDashboard(); 
-                playPopSound();
-                for(let i=0; i<15; i++) particles.push(new Particle(ball.x, ball.y, colors[ball.type]));
-                if (ball.timer) clearTimeout(ball.timer);
-                ball.timer = setTimeout(() => ball.reset(), 10000);
+                stats[ball.type]++; updateDashboard(); playPopSound();
+                for(let j=0; j<15; j++) particles.push(new Particle(ball.x, ball.y, colors[ball.type]));
+                setTimeout(() => {
+                    ball.isClicked = false;
+                    if (stats[ball.type] > 0) stats[ball.type]--;
+                    updateDashboard();
+                }, 10000);
+                return; // 點擊一個就停止，防止穿透
             }
         }
-    });
+    }
 };
 
 canvas.addEventListener('mousedown', (e) => handleAction(e.clientX, e.clientY));
 canvas.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    handleAction(e.touches[0].clientX, e.touches[0].clientY);
+    e.preventDefault(); handleAction(e.touches[0].clientX, e.touches[0].clientY);
 }, { passive: false });
-
-const resetBtn = document.getElementById('reset-btn');
-if (resetBtn) {
-    resetBtn.addEventListener('click', () => {
-        balls.forEach(ball => {
-            if (!ball.isImage && ball.isClicked) {
-                for(let i=0; i<8; i++) particles.push(new Particle(ball.x, ball.y, colors[ball.type]));
-                if (ball.timer) clearTimeout(ball.timer);
-                ball.isClicked = false;
-            }
-        });
-        stats = { red: 0, green: 0, yellow: 0 };
-        updateDashboard();
-    });
-}
 
 async function init() {
     resize();
-    
-    // 1. 載入圖片
     const loadDeco = decorativeImagesConfig.map(src => new Promise(resolve => {
         const img = new Image(); img.src = src;
         img.onload = () => { loadedDecoImages.push(img); resolve(); };
@@ -326,23 +362,18 @@ async function init() {
     }));
     await Promise.all(loadDeco);
     
-    // 2. 加入圖片球 (現在會參與碰撞)
-    for (let i = 0; i < 10; i++) {
+    // 加入圖片球保持 (保持 0 個，除非 decorativeImagesConfig 有東西)
+    for (let i = 0; i < 8; i++) {
         if (loadedDecoImages.length > 0) {
-            balls.push(new Ball({
-                img: loadedDecoImages[Math.floor(Math.random() * loadedDecoImages.length)]
-            }));
+            balls.push(new Ball({ img: loadedDecoImages[Math.floor(Math.random() * loadedDecoImages.length)] }));
         }
     }
 
-    // 3. 加入文字球
     Object.keys(emotionMap).forEach(word => {
         balls.push(new Ball({ word: word }));
     });
     
-    playBackgroundPiano(); 
-    updateDashboard(); 
-    animate();
+    playBackgroundPiano(); updateDashboard(); animate();
 }
 
 init();

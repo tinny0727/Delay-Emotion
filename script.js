@@ -14,7 +14,7 @@ const colors = {
     red: "#f43f3f",
     green: "#fff30e",
     yellow: "#00ff00",
-    default: "rgba(253, 164, 10, 0.73)" // 橘黃半透明
+    default: "rgba(142, 142, 142, 0.73)" // 橘黃半透明
 };
 
 // 裝飾圖片路徑 (選配，如果要貓咪狗狗圖片會轉動請填寫路徑)

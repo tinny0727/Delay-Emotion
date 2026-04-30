@@ -70,8 +70,8 @@ body{
 }
 
 .dot.red { background: #f46e6e; box-shadow: 0 0 5px #f46e6e; }
-.dot.green { background: #24ef2e; box-shadow: 0 0 5px #24ef2e; }
-.dot.yellow { background: #ffd700; box-shadow: 0 0 5px #ffd700; }
+.dot.green { background: #ffd700; box-shadow: 0 0 5px  #ffd700; }
+.dot.yellow { background:  #24ef2e; box-shadow: 0 0 5px #24ef2e; }
 
 #analysis {
     font-size: 12px;

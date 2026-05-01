@@ -1,3 +1,4 @@
+/* 1. 基礎設定 */
 body, html {
     margin: 0;
     padding: 0;
@@ -5,165 +6,90 @@ body, html {
     height: 100%;
     overflow: hidden;
     background-color: #484848; 
-    font-family: "Microsoft JhengHei", sans-serif;
-    font-size: small;
+    font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+    font-size: 16px;
 }
-body{
-    background-image: url(image/筆記本.png);
-    background-size:cover;
+
+/* 2. 背景設定 - 修正媒體查詢嵌套問題 */
+body {
+    background-image: url("image/筆記本.png"); /* 建議確認此路徑與檔名 */
+    background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     background-attachment: fixed;
-    overflow: hidden; /* 防止出現捲軸 */
+}
 
-    /* 手機版背景 (螢幕寬度小於 768px 時) */
 @media (max-width: 768px) {
     body {
-        background-image: url(image/筆記本.png); /* 你的長版背景圖 */
-        /* 如果希望背景隨內容拉長，可將 fixed 改為 scroll */
-        background-attachment: fixed; 
-        background-size: cover;
-        background-position: center top; /* 手機版通常對齊頂部比較好看 */
+        background-position: center top; 
     }
 }
+
+/* 3. Canvas 確保全螢幕且不擋住 UI */
+canvas {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1;
 }
 
-
-
-
-
-
-
-.chat-icon::after {
-  content: "";
-  position: absolute;
-  bottom: -8px;
-  right: 15px;
-  width: 0;
-  height: 0;
-  border-top: 8px solid #fff;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-}
-
-
-#ui {
-    position: absolute;
+/* 4. 統計盒 (右下角儀表板) */
+.stat-box {
+    position: fixed; /* 改為 fixed 確保在手機上位置穩定 */
     bottom: 20px;
     right: 20px;
+    z-index: 1000;
+    min-width: 200px;
+    padding: 15px 20px;
+    
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    
     color: white;
-    pointer-events: none; /* 確保文字不會擋住點擊 */
-    z-index: 10;
+    user-select: none;
+    pointer-events: none; /* 讓點擊可以穿過 UI 點到球 */
+}
+
+.total-section {
+    text-align: center;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.total-label { font-size: 12px; opacity: 0.8; }
+#global-count {
+    font-size: 36px;
+    font-weight: 900;
+    color: #ffd700;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
 }
 
 .stat-item {
-    margin-bottom: 8px;
-    font-size: 12px;
     display: flex;
     align-items: center;
+    margin-bottom: 5px;
+    font-size: 13px;
 }
 
 .dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    margin-right: 7px;
-}
-
-.dot.red { background: #f46e6e; box-shadow: 0 0 5px #f46e6e; }
-.dot.green { background: #ffd700; box-shadow: 0 0 5px  #ffd700; }
-.dot.yellow { background:  #24ef2e; box-shadow: 0 0 5px #24ef2e; }
-
-#analysis {
-    font-size: 12px;
-    color: #6e6d6d;
-    margin-top: 5px;
-    line-height: 1.4;
-}
-
-canvas {
-    display: block;
-}
-#ui {
-    position: fixed;
-    bottom: 20px;
-    right: 10px;
-    width: fit-content; 
-    min-width: 150px;
-    color: #000000;
-    background: rgba(235, 241, 235, 0.6);
-    padding: 20px 25px;
-    border-radius: 10px;
-    
-    border: 1.1 solid rgba(255, 255, 255, 0.907);
-    z-index: 100;
-    min-width: 160px;
-}
-/* 統計盒主容器 - 移至右下角 */
-.stat-box {
-    position: absolute;
-    bottom: 20px;   /* 距離底部 20px */
-    right: 20px;    /* 距離右側 20px */
-    z-index: 1000;
-    min-width: 240px;
-    padding: 20px;
-    
-    /* 玻璃擬態風格 */
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    
-    /* 圓角設計 */
-    border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    
-    color: white;
-    font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
-    user-select: none;
-    pointer-events: none; /* 穿透點擊，不影響遊戲 */
-}
-
-/* 總消滅數區塊 */
-.total-section {
-    text-align: center;
-    margin-bottom: 15px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-#global-count {
-    font-size: 48px;
-    font-weight: 900;
-    color: #ffd700;
-    text-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
-    display: block;
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-/* 數字跳動效果 */
-.count-bump {
-    transform: scale(1.2);
-}
-
-/* 細項指標 */
-.stat-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-    font-size: 14px;
-}
-
-.dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    margin-right: 12px;
+    margin-right: 10px;
 }
 
 .red { background: #f43f3f; box-shadow: 0 0 8px #f43f3f; }
 .green { background: #fff30e; box-shadow: 0 0 8px #fff30e; }
 .yellow { background: #00ff00; box-shadow: 0 0 8px #00ff00; }
+
+/* 5. 啟動畫面 - 確保 z-index 最高 */
 #start-screen {
     position: fixed;
     top: 0; left: 0;
@@ -172,19 +98,15 @@ canvas {
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 2000;
+    z-index: 2000; /* 高於所有元素 */
     transition: opacity 0.5s ease;
 }
 
-.start-content {
-    text-align: center;
-    color: white;
-    font-family: sans-serif;
-}
-
+.start-content { text-align: center; color: white; }
 #start-btn {
-    padding: 15px 40px;
-    font-size: 20px;
+    margin-top: 20px;
+    padding: 12px 35px;
+    font-size: 18px;
     background: rgba(255, 215, 0, 0.2);
     color: #ffd700;
     border: 2px solid #ffd700;
@@ -192,10 +114,6 @@ canvas {
     cursor: pointer;
     backdrop-filter: blur(10px);
     transition: all 0.3s;
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
 }
 
-#start-btn:hover {
-    background: #ffd700;
-    color: #000;
-}
+#start-btn:hover { background: #ffd700; color: #000; }

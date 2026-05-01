@@ -46,6 +46,7 @@ body{
   border-right: 8px solid transparent;
 }
 
+
 #ui {
     position: absolute;
     bottom: 20px;
@@ -98,7 +99,68 @@ canvas {
     z-index: 100;
     min-width: 160px;
 }
+/* 統計盒主容器 - 移至右下角 */
 .stat-box {
-    line-height: 1.8;
-    font-size: 10px
+    position: absolute;
+    bottom: 20px;   /* 距離底部 20px */
+    right: 20px;    /* 距離右側 20px */
+    z-index: 1000;
+    min-width: 240px;
+    padding: 20px;
+    
+    /* 玻璃擬態風格 */
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    
+    /* 圓角設計 */
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    
+    color: white;
+    font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+    user-select: none;
+    pointer-events: none; /* 穿透點擊，不影響遊戲 */
 }
+
+/* 總消滅數區塊 */
+.total-section {
+    text-align: center;
+    margin-bottom: 15px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+#global-count {
+    font-size: 48px;
+    font-weight: 900;
+    color: #ffd700;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+    display: block;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* 數字跳動效果 */
+.count-bump {
+    transform: scale(1.2);
+}
+
+/* 細項指標 */
+.stat-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 12px;
+}
+
+.red { background: #f43f3f; box-shadow: 0 0 8px #f43f3f; }
+.green { background: #fff30e; box-shadow: 0 0 8px #fff30e; }
+.yellow { background: #00ff00; box-shadow: 0 0 8px #00ff00; }

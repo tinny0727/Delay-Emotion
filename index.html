@@ -12,18 +12,33 @@
 </div>
 
 
-    <div id="ui">
-        
-        
-        
-        <div class="stat-box">
-            <div class="stat-item"><span class="dot red"></span> 高壓（焦慮/疲憊）：<span id="count-red">0</span></div>
-            <div class="stat-item"><span class="dot green"></span> 高能 (黃金期/任務執行)：<span id="count-green">0</span></div>
-            <div class="stat-item"><span class="dot yellow"></span> 平穩：<span id="count-yellow">0</span></div>
-        </div>
-        
-        <div id="analysis"></div>
+   <div class="stat-box">
+    <!-- 累積消滅區塊 -->
+    <div class="total-section">
+        <div class="total-label">總共消滅了</div>
+        <span id="global-count">0</span>
+        <span class="total-unit">個壓力</span>
     </div>
+    
+    <!-- 細項指數區塊 -->
+    <div class="details-section">
+        <div class="stat-item">
+            <span class="dot red"></span>
+            <span class="label">高壓（焦慮/疲憊）：</span>
+            <span id="count-red">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="dot green"></span>
+            <span class="label">平穩情緒：</span>
+            <span id="count-green">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="dot yellow"></span>
+            <span class="label">執行高能：</span>
+            <span id="count-yellow">0</span>
+        </div>
+    </div>
+</div>
 
     <canvas id="gameCanvas"></canvas>
 

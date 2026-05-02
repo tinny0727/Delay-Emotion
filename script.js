@@ -1,154 +1,345 @@
-// 1. 初始化資源與背景
-const trashAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'); 
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-const oldContainer = document.getElementById('bg-glitter-container');
-if (oldContainer) oldContainer.remove();
+// --- 1. 配置與常數 ---
+const emotionMap = {
+    "人生好難：D": "red" , "我想碎覺": "red" , "今天有點鼠...": "red", "腦袋登出ing": "red", "我好餓...": "red", "極度 厭世": "red", "腦袋空白": "red", "煩鼠了！": "red", "爆炸吧！": "red", "壓力好大": "red", "我好累！": "red", "想哭": "red",
+    "我是 南波萬！": "yellow", "我愛世界 世界愛我！": "yellow", "衝鴨！": "yellow", "積極 向上": "yellow", "超有元氣": "yellow", "滿血復活～": "yellow", "有小確辛～": "yellow", "我好開勳": "yellow", "有好事 發生:D": "yellow",
+    "還撐得住": "green", "心悶悶": "green", "待機中...": "green",
+    "卡卡不順": "green", "我是 鹹魚：D": "green", "今天不順：/": "green", "想當廢廢XD": "green"
+};
 
-const bgContainer = document.createElement('div');
-bgContainer.id = 'bg-glitter-container';
-document.body.prepend(bgContainer);
+const colors = {
+    red: "#f43f3f",
+    green: "#fff30e",
+    yellow: "#00ff00",
+    default: "rgba(142, 142, 142, 0.73)"
+};
 
-// 產生閃爍背景
-for (let i = 0; i < 50; i++) {
-    const box = document.createElement('div');
-    box.classList.add('glitter-box');
-    const isWhite = Math.random() > 0.7;
-    box.style.setProperty('--bg-color', isWhite ? 'rgb(250, 250, 250)' : 'rgba(59, 189, 45, 0.78)'); 
-    const size = Math.random() * 15 + 5;
-    Object.assign(box.style, {
-        width: `${size}px`, height: `${size}px`,
-        left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`,
-        animation: `blink ${(Math.random() * 3 + 2).toFixed(2)}s infinite ease-in-out ${(Math.random() * -5).toFixed(2)}s`
+let balls = [];
+let particles = [];
+let stats = { red: 0, green: 0, yellow: 0 };
+let globalTotalDeleted = 0;
+let scaleFactor = 1;
+let gravityX = 0;
+let gravityY = 0;
+
+// --- 2. 系統功能 ---
+function handleOrientation(event) {
+    // gamma: 左右傾斜, beta: 前後傾斜
+    gravityX = (event.gamma || 0) * 0.08;
+    gravityY = (event.beta || 0) * 0.08;
+}
+
+function playPopSound() {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.05);
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.1);
+}
+
+function resize() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const scale = window.devicePixelRatio || 1;
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    ctx.scale(scale, scale);
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+    
+    // 手機版動態放大比例
+    if (width < 600) {
+        scaleFactor = (width / 375) * 1.5;
+    } else {
+        scaleFactor = Math.min(width, height) / 1000;
+    }
+    
+    balls.forEach(ball => ball.recalculateSize());
+}
+window.addEventListener('resize', resize);
+
+// --- 3. 類別定義 ---
+class Ball {
+    constructor(config) {
+        this.word = config.word || "";
+        this.type = emotionMap[this.word] || "default";
+        this.hp = this.type === "red" ? 2 : 1;
+        this.isClicked = false;
+        this.sizeVar = 0.8 + Math.random() * 0.3;
+        this.angle = Math.random() * Math.PI * 2;
+        this.rotationSpeed = (Math.random() - 0.5) * 0.012;
+
+        const shapeRoll = Math.random();
+        if (shapeRoll < 0.5) this.shapeType = 1; // 方塊
+        else if (shapeRoll < 0.75) this.shapeType = 0; // 圓形
+        else this.shapeType = 3; // 雲朵
+
+        this.radius = 10;
+        this.recalculateSize();
+        this.x = Math.random() * (window.innerWidth - this.radius * 2) + this.radius;
+        this.y = Math.random() * (window.innerHeight - this.radius * 2) + this.radius;
+        this.dx = (Math.random() - 0.5) * 1.2;
+        this.dy = (Math.random() - 0.5) * 1.2;
+    }
+
+    recalculateSize() {
+        const isMobile = window.innerWidth < 600;
+        let baseRad = isMobile ? 35 : 90; // 加大基礎尺寸
+        if (this.shapeType === 3) baseRad *= 1.1;
+        this.radius = baseRad * scaleFactor * this.sizeVar;
+    }
+
+    drawCloud(ctx, r) {
+        ctx.beginPath();
+        ctx.translate(0, r * 0.1);
+        ctx.moveTo(-r * 0.8, r * 0.2);
+        ctx.bezierCurveTo(-r * 1.1, r * 0.8, r * 1.1, r * 0.8, r * 0.8, r * 0.2);
+        ctx.bezierCurveTo(r * 1.3, r * 0.1, r * 1.1, -r * 0.6, r * 0.6, -r * 0.5);
+        ctx.bezierCurveTo(r * 0.5, -r * 0.9, -r * 0.5, -r * 0.9, -r * 0.6, -r * 0.5);
+        ctx.bezierCurveTo(-r * 1.1, -r * 0.6, -r * 1.3, r * 0.1, -r * 0.8, r * 0.2);
+        ctx.closePath();
+    }
+
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+
+        const isGlowing = this.isClicked || (this.type === "red" && this.hp === 1);
+        if (isGlowing) {
+            ctx.shadowBlur = 15 * scaleFactor;
+            ctx.shadowColor = colors[this.type];
+            ctx.fillStyle = colors[this.type];
+        } else {
+            ctx.fillStyle = colors.default;
+        }
+
+        ctx.strokeStyle = "rgba(255,255,255,0.4)";
+        ctx.lineWidth = 2.5;
+
+        if (this.shapeType === 0) {
+            ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        } else if (this.shapeType === 1) {
+            const s = this.radius * 1.7;
+            ctx.beginPath();
+            ctx.roundRect(-s/2, -s/2, s, s, s * 0.2);
+            ctx.fill(); ctx.stroke();
+        } else {
+            this.drawCloud(ctx, this.radius); ctx.fill(); ctx.stroke();
+        }
+
+        ctx.shadowBlur = 0;
+        const fontSize = Math.floor(this.radius * 0.3);
+        ctx.fillStyle = isGlowing ? "#1a1a2e" : "white";
+        ctx.font = `bold ${fontSize}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(this.word, 0, 0);
+        ctx.restore();
+    }
+
+   update() {
+        // --- 1. 紅球專屬膨脹邏輯 ---
+        // 只有紅球 (type === "red") 且 尚未被點擊過 (hp === 2) 時會持續長大
+        if (this.type === "red" && this.hp === 2) {
+            this.radius += 0.05 * scaleFactor; // 每幀增長的尺寸
+            
+            // 設定手機與電腦不同的最大上限，避免球球大到擋住全螢幕
+            const maxRad = (window.innerWidth < 600 ? 80 : 180) * scaleFactor;
+            if (this.radius > maxRad) this.radius = maxRad;
+        }
+
+        // --- 2. 環境重力與阻力 ---
+        this.dx += gravityX * 0.15;
+        this.dy += gravityY * 0.15;
+        this.dx *= 0.98;
+        this.dy *= 0.98;
+
+        // 更新位置
+        this.x += this.dx;
+        this.y += this.dy;
+
+        // --- 3. 強力邊界偵測 (確保不跑出界外) ---
+        if (this.x - this.radius < 0) { 
+            this.x = this.radius; 
+            this.dx = Math.abs(this.dx) * 0.7; 
+        } else if (this.x + this.radius > window.innerWidth) { 
+            this.x = window.innerWidth - this.radius; 
+            this.dx = -Math.abs(this.dx) * 0.7; 
+        }
+
+        if (this.y - this.radius < 0) { 
+            this.y = this.radius; 
+            this.dy = Math.abs(this.dy) * 0.7; 
+        } else if (this.y + this.radius > window.innerHeight) { 
+            this.y = window.innerHeight - this.radius; 
+            this.dy = -Math.abs(this.dy) * 0.7; 
+        }
+
+        this.angle += this.rotationSpeed;
+        this.draw();
+    
+    }
+}
+
+// --- 4. 粒子系統 ---
+class Particle {
+    constructor(x, y, color) {
+        this.x = x; this.y = y; this.color = color;
+        this.size = (Math.random() * 6 + 2) * scaleFactor;
+        this.speedX = (Math.random() - 0.5) * 8 * scaleFactor;
+        this.speedY = (Math.random() - 0.5) * 8 * scaleFactor;
+        this.alpha = 1;
+        this.decay = Math.random() * 0.02 + 0.015;
+    }
+    update() {
+        this.x += this.speedX; this.y += this.speedY;
+        this.alpha -= this.decay;
+    }
+    draw() {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.alpha);
+        ctx.fillStyle = this.color;
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+    }
+}
+
+// --- 5. 邏輯處理 ---
+function resolveCollisions() {
+    for (let i = 0; i < balls.length; i++) {
+        for (let j = i + 1; j < balls.length; j++) {
+            const b1 = balls[i]; const b2 = balls[j];
+            const dist = Math.hypot(b1.x - b2.x, b1.y - b2.y);
+            const minDist = b1.radius + b2.radius;
+            if (dist < minDist && dist > 0) {
+                const overlap = minDist - dist;
+                const nx = (b1.x - b2.x) / dist;
+                const ny = (b1.y - b2.y) / dist;
+                b1.x += nx * overlap / 2; b1.y += ny * overlap / 2;
+                b2.x -= nx * overlap / 2; b2.y -= ny * overlap / 2;
+                const dot = (b1.dx - b2.dx) * nx + (b1.dy - b2.dy) * ny;
+                if (dot < 0) {
+                    b1.dx -= dot * nx; b1.dy -= dot * ny;
+                    b2.dx += dot * nx; b2.dy += dot * ny;
+                }
+            }
+        }
+    }
+}
+
+function updateDashboard() {
+    ['red', 'green', 'yellow'].forEach(c => {
+        const el = document.getElementById(`count-${c}`);
+        if (el) el.innerText = stats[c];
     });
-    bgContainer.appendChild(box);
+    const totalEl = document.getElementById('global-count');
+    if (totalEl) totalEl.innerText = globalTotalDeleted;
 }
 
-// 2. 拖拽全域變數
-let activeElement = null;
-let offset = { x: 0, y: 0 };
-
-// 3. 貼紙生成函式[cite: 4]
-function createSticker(type) {
-    const canvas = document.getElementById('sticker-canvas');
-    const icons = { high: '分心.png', anxi: '焦慮.png', lopie: '內耗.png', avoid: '逃避.png', perfy: 'IP(1).png' };
-    const content = icons[type] || type;
-
-    const sticker = document.createElement('div');
-    sticker.className = 'active-sticker';
+const handleAction = (clientX, clientY) => {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = clientX - rect.left;
+    const mouseY = clientY - rect.top;
     
-    if (content.endsWith('.png') || content.endsWith('.jpg')) {
-        const img = document.createElement('img');
-        img.src = content;
-        img.style.width = '55px'; 
-        img.style.pointerEvents = 'none'; // 防止圖片阻擋拖拽點擊
-        sticker.appendChild(img);
-    } else {
-        sticker.innerText = content;
-        sticker.style.fontSize = '35px';
+    for (let i = balls.length - 1; i >= 0; i--) {
+        const ball = balls[i];
+        if (Math.hypot(ball.x - mouseX, ball.y - mouseY) < ball.radius) {
+            playPopSound();
+            if (ball.type === "red") {
+                ball.hp -= 1;
+                for(let j=0; j<15; j++) particles.push(new Particle(ball.x, ball.y, colors.red));
+                if (ball.hp <= 0) {
+                    stats.red++; globalTotalDeleted++;
+                    balls.splice(i, 1);
+                    updateDashboard();
+                }
+            } else if (!ball.isClicked) {
+                ball.isClicked = true;
+                stats[ball.type]++;
+                updateDashboard();
+                for(let j=0; j<10; j++) particles.push(new Particle(ball.x, ball.y, colors[ball.type]));
+                setTimeout(() => {
+                    ball.isClicked = false;
+                    if (stats[ball.type] > 0) stats[ball.type]--;
+                    updateDashboard();
+                }, 8000);
+            }
+            return;
+        }
     }
+};
 
-    sticker.style.left = '100px';
-    sticker.style.top = '100px';
-    addDragListeners(sticker); // 讓貼紙可以被點擊拖動[cite: 4]
-    canvas.appendChild(sticker);
-}
+canvas.addEventListener('mousedown', (e) => handleAction(e.clientX, e.clientY));
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault(); handleAction(e.touches[0].clientX, e.touches[0].clientY);
+}, { passive: false });
 
-function createTaskSticker() {
-    const text = prompt("請輸入任務內容：");
-    if (!text || text.trim() === "") return;
-
-    const colorMap = { 'R': '#ff6b6b', 'B': '#4dabf7', 'Y': '#ffd43b', 'P': '#be4bdb', 'G': '#8ce99a' };
-    let colorHint = "請選擇標籤顏色：\nR.紅色 B.藍色 Y.金色 P.紫色 G.嫩綠\n(直接輸入字母，留空則隨機)";
-    const choice = (prompt(colorHint) || "").toUpperCase();
-    const finalColor = colorMap[choice] || colorMap[Object.keys(colorMap)[Math.floor(Math.random() * 5)]];
-
-    createTaskByType(text, finalColor);
-}
-
-function createTaskByType(typeText, color) {
-    const canvas = document.getElementById('sticker-canvas');
-    const sticker = document.createElement('div');
-    sticker.className = 'active-sticker task-card';
-    sticker.innerHTML = `<div class="sticker-text" contenteditable="true">${typeText}</div>`;
-    sticker.style.borderLeft = `6px solid ${color}`;
-    sticker.style.left = '50px';
-    sticker.style.top = '50px';
-
-    canvas.appendChild(sticker);
-    addDragListeners(sticker);
-
-    const textElement = sticker.querySelector('.sticker-text');
-    textElement.addEventListener('mousedown', (e) => e.stopPropagation());
-    textElement.addEventListener('touchstart', (e) => e.stopPropagation());
-}
-
-// 4. 核心拖拽與回收邏輯[cite: 4]
-function addDragListeners(el) {
-    el.addEventListener('mousedown', startDragging);
-    el.addEventListener('touchstart', startDragging, { passive: false });
-}
-
-function startDragging(e) {
-    if (e.target.contentEditable === "true") return;
-    activeElement = e.currentTarget; 
-    const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-    const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
-    const rect = activeElement.getBoundingClientRect();
-    offset.x = clientX - rect.left;
-    offset.y = clientY - rect.top;
-    activeElement.style.zIndex = 1000;
-
-    document.addEventListener('mousemove', drag);
-    document.addEventListener('touchmove', drag, { passive: false });
-    document.addEventListener('mouseup', stopDragging);
-    document.addEventListener('touchend', stopDragging);
-}
-
-function drag(e) {
-    if (!activeElement) return;
-    const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-    const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
-    const canvasRect = document.getElementById('sticker-canvas').getBoundingClientRect();
-    
-    activeElement.style.left = (clientX - canvasRect.left - offset.x) + 'px';
-    activeElement.style.top = (clientY - canvasRect.top - offset.y) + 'px';
-
-    // 垃圾桶視覺反饋[cite: 4]
-    const trashCan = document.getElementById('trash-can');
-    const trashRect = trashCan.getBoundingClientRect();
-    if (clientX > trashRect.left && clientX < trashRect.right && clientY > trashRect.top && clientY < trashRect.bottom) {
-        trashCan.classList.add('hover');
-    } else {
-        trashCan.classList.remove('hover');
+function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    resolveCollisions();
+    balls.forEach(ball => ball.update());
+    for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].update(); particles[i].draw();
+        if (particles[i].alpha <= 0) particles.splice(i, 1);
     }
+    requestAnimationFrame(animate);
 }
 
-function stopDragging(e) {
-    if (!activeElement) return;
-    const clientX = e.type === 'touchend' ? e.changedTouches[0].clientX : e.clientX;
-    const clientY = e.type === 'touchend' ? e.changedTouches[0].clientY : e.clientY;
+function init() {
+    resize();
+    balls = []; // 清空可能存在的舊球
+    Object.keys(emotionMap).forEach(word => {
+        balls.push(new Ball({ word: word }));
+    });
+    updateDashboard();
+    animate();
 
-    activeElement.style.pointerEvents = 'none'; 
-    const dropTarget = document.elementFromPoint(clientX, clientY);
-    activeElement.style.pointerEvents = 'auto'; 
+    // 啟動自動生成
+    setInterval(() => {
+        if (balls.length < 50) {
+            const stressWords = ["壓力好大", "爆炸吧！", "煩鼠了！", "極度 厭世"];
+            balls.push(new Ball({ word: stressWords[Math.floor(Math.random() * stressWords.length)] }));
+        }
+    }, 3000);
+}
 
-    const trashCan = dropTarget ? dropTarget.closest('#trash-can') : null;
+// --- 啟動按鈕綁定 ---
+window.onload = () => {
+    const startBtn = document.getElementById('start-btn');
+    const startScreen = document.getElementById('start-screen');
 
-    if (trashCan) {
-        trashAudio.currentTime = 0;
-        trashAudio.play().catch(() => {});
-        activeElement.style.transition = 'all 0.2s ease';
-        activeElement.style.transform = 'scale(0) rotate(20deg)';
-        const target = activeElement;
-        setTimeout(() => target.remove(), 200);
-        trashCan.classList.remove('hover');
-    } else {
-        activeElement.style.zIndex = 100;
+    if (startBtn) {
+        startBtn.addEventListener('click', async () => {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            // iOS 權限
+            if (typeof DeviceOrientationEvent !== 'undefined' && 
+                typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const state = await DeviceOrientationEvent.requestPermission();
+                    if (state === 'granted') window.addEventListener('deviceorientation', handleOrientation);
+                } catch (e) { console.error(e); }
+            } else {
+                window.addEventListener('deviceorientation', handleOrientation);
+            }
+
+            init();
+
+            if (startScreen) {
+                startScreen.style.opacity = '0';
+                setTimeout(() => { startScreen.style.display = 'none'; }, 500);
+            }
+        });
     }
-
-    activeElement = null;
-    document.removeEventListener('mousemove', drag);
-    document.removeEventListener('touchmove', drag);
-    document.removeEventListener('mouseup', stopDragging);
-    document.removeEventListener('touchend', stopDragging);
-}
+};

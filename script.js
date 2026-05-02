@@ -61,7 +61,7 @@ function resize() {
     if (width < 600) {
         scaleFactor = (width / 375) * 1.5;
     } else {
-        scaleFactor = Math.min(width, height) / 1200;
+        scaleFactor = Math.min(width, height) / 1000;
     }
     
     balls.forEach(ball => ball.recalculateSize());

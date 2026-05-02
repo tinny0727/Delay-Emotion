@@ -94,7 +94,7 @@ class Ball {
 
     recalculateSize() {
         const isMobile = window.innerWidth < 600;
-        let baseRad = isMobile ? 35 : 90; // 加大基礎尺寸
+        let baseRad = isMobile ? 25 : 90; // 加大基礎尺寸
         if (this.shapeType === 3) baseRad *= 1.1;
         this.radius = baseRad * scaleFactor * this.sizeVar;
     }
@@ -139,12 +139,21 @@ class Ball {
         }
 
         ctx.shadowBlur = 0;
-        const fontSize = Math.floor(this.radius * 0.3);
+        const fontSize = Math.floor(this.radius * 0.32);
         ctx.fillStyle = isGlowing ? "#1a1a2e" : "white";
-        ctx.font = `bold ${fontSize}px sans-serif`;
+        ctx.font = `bold ${fontSize}px "Microsoft JhengHei", sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(this.word, 0, 0);
+        // 邏輯：將字串按「空格」拆分成陣列
+        const lines = this.word.split(" "); 
+        const lineHeight = fontSize * 1.2;
+        
+        // 計算起始 Y 座標，讓多行文字能垂直置中
+        const startY = -((lines.length - 1) * lineHeight) / 2;
+        lines.forEach((line, index) => {
+      ctx.fillText(line, 0, startY + (index * lineHeight));
+        });
+        // -------
         ctx.restore();
     }
 
@@ -155,7 +164,7 @@ class Ball {
             this.radius += 0.05 * scaleFactor; // 每幀增長的尺寸
             
             // 設定手機與電腦不同的最大上限，避免球球大到擋住全螢幕
-            const maxRad = (window.innerWidth < 600 ? 50 : 120) * scaleFactor;
+            const maxRad = (window.innerWidth < 600 ? 40 : 100) * scaleFactor;
             if (this.radius > maxRad) this.radius = maxRad;
         }
 
@@ -307,7 +316,7 @@ function init() {
 
     // 啟動自動生成
     setInterval(() => {
-        if (balls.length < 40) {
+        if (balls.length < 20) {
             const stressWords = ["壓力好大", "爆炸吧！", "煩鼠了！", "極度 厭世"];
             balls.push(new Ball({ word: stressWords[Math.floor(Math.random() * stressWords.length)] }));
         }

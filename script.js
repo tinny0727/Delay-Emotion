@@ -161,10 +161,10 @@ class Ball {
         // --- 1. 紅球專屬膨脹邏輯 ---
         // 只有紅球 (type === "red") 且 尚未被點擊過 (hp === 2) 時會持續長大
         if (this.type === "red" && this.hp === 2) {
-            this.radius += 0.05 * scaleFactor; // 每幀增長的尺寸
+            this.radius += 0.035 * scaleFactor; // 每幀增長的尺寸
             
             // 設定手機與電腦不同的最大上限，避免球球大到擋住全螢幕
-            const maxRad = (window.innerWidth < 600 ? 40 : 100) * scaleFactor;
+            const maxRad = (window.innerWidth < 600 ? 20 : 90) * scaleFactor;
             if (this.radius > maxRad) this.radius = maxRad;
         }
 

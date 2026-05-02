@@ -94,7 +94,7 @@ class Ball {
 
     recalculateSize() {
         const isMobile = window.innerWidth < 600;
-        let baseRad = isMobile ? 40 : 90; // 加大基礎尺寸
+        let baseRad = isMobile ? 40 : 150; // 加大基礎尺寸
         if (this.shapeType === 3) baseRad *= 1.1;
         this.radius = baseRad * scaleFactor * this.sizeVar;
     }

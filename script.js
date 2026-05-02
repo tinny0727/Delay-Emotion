@@ -4,8 +4,8 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 // --- 1. 配置與常數 ---
 const emotionMap = {
-    "人生好難：D": "red" , "我想碎覺": "red" , "今天有點鼠...": "red", "腦袋登出ing": "red", "我好餓...": "red", "極度 厭世": "red", "腦袋空白": "red", "煩鼠了！": "red", "爆炸吧！": "red", "壓力好大": "red", "我好累！": "red", "想哭": "red",
-    "我是南波萬！": "yellow", "我愛世界 世界愛我！": "yellow", "衝鴨！": "yellow", "積極 向上": "yellow", "超有元氣": "yellow", "滿血復活～": "yellow", "有小確辛～": "yellow", "我好開勳": "yellow", "有好事 發生:D": "yellow",
+    "人生好難：D": "red" , "我想碎覺": "red" , "今天 有點鼠...": "red", "腦袋登出ing": "red", "我好餓...": "red", "極度 厭世": "red", "腦袋空白": "red", "煩鼠了！": "red", "爆炸吧！": "red", "壓力好大": "red", "我好累！": "red", "想哭": "red",
+    "我是 南波萬！": "yellow", "我愛世界 世界愛我！": "yellow", "衝鴨！": "yellow", "積極 向上": "yellow", "超有元氣": "yellow", "滿血 復活～": "yellow", "有小確辛～": "yellow", "我好開勳": "yellow", "有好事 發生:D": "yellow",
     "還撐得住": "green", "心悶悶": "green", "待機中...": "green",
     "卡卡不順": "green", "我是 鹹魚：D": "green", "今天不順：/": "green", "想當廢廢XD": "green"
 };
@@ -94,7 +94,7 @@ class Ball {
 
     recalculateSize() {
         const isMobile = window.innerWidth < 600;
-        let baseRad = isMobile ? 25 : 90; // 加大基礎尺寸
+        let baseRad = isMobile ? 35 : 150; // 加大基礎尺寸
         if (this.shapeType === 3) baseRad *= 1.1;
         this.radius = baseRad * scaleFactor * this.sizeVar;
     }
@@ -161,7 +161,7 @@ class Ball {
         // --- 1. 紅球專屬膨脹邏輯 ---
         // 只有紅球 (type === "red") 且 尚未被點擊過 (hp === 2) 時會持續長大
         if (this.type === "red" && this.hp === 2) {
-            this.radius += 0.035 * scaleFactor; // 每幀增長的尺寸
+            this.radius += 0.015 * scaleFactor; // 每幀增長的尺寸
             
             // 設定手機與電腦不同的最大上限，避免球球大到擋住全螢幕
             const maxRad = (window.innerWidth < 600 ? 75 : 100) * scaleFactor;
@@ -282,7 +282,7 @@ const handleAction = (clientX, clientY) => {
                     ball.isClicked = false;
                     if (stats[ball.type] > 0) stats[ball.type]--;
                     updateDashboard();
-                }, 8000);
+                }, 200000);
             }
             return;
         }
@@ -307,22 +307,37 @@ function animate() {
 
 function init() {
     resize();
-    balls = []; // 清空可能存在的舊球
-    Object.keys(emotionMap).forEach(word => {
-        balls.push(new Ball({ word: word }));
-    });
+    balls = []; // 清空舊球
+    
+    // --- 1. 初始球數控制 ---
+    const keys = Object.keys(emotionMap);
+    const isMobile = window.innerWidth < 600;
+    
+    // 手機版初始先放 10 顆就好，電腦版全放
+    const initialCount = isMobile ? 10 : keys.length;
+    const shuffled = keys.sort(() => 0.5 - Math.random());
+    
+    for (let i = 0; i < initialCount; i++) {
+        balls.push(new Ball({ word: shuffled[i] }));
+    }
+    
     updateDashboard();
     animate();
 
-    // 啟動自動生成
+    // --- 2. 核心：增生系統 ---
+    // 每一段時間自動檢查，如果球太少就補新球
     setInterval(() => {
-        if (balls.length < 10) {
-            const stressWords = ["壓力好大", "爆炸吧！", "煩鼠了！", "極度 厭世"];
-            balls.push(new Ball({ word: stressWords[Math.floor(Math.random() * stressWords.length)] }));
+        const isMobile = window.innerWidth < 600;
+        const maxBalls = isMobile ? 20 : 50; // 手機版上限 20 顆，電腦版 45 顆
+        
+        if (balls.length < maxBalls) {
+            // 隨機從所有情緒詞彙中挑一個出來增生
+            const allWords = Object.keys(emotionMap);
+            const randomWord = allWords[Math.floor(Math.random() * allWords.length)];
+            balls.push(new Ball({ word: randomWord }));
         }
-    }, 6000);
+    }, 4000); // 每 4 秒偵測一次是否要增生
 }
-
 // --- 啟動按鈕綁定 ---
 window.onload = () => {
     const startBtn = document.getElementById('start-btn');

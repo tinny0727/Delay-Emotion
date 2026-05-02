@@ -94,7 +94,7 @@ class Ball {
 
     recalculateSize() {
         const isMobile = window.innerWidth < 600;
-        let baseRad = isMobile ? 40 :120; // 加大基礎尺寸
+        let baseRad = isMobile ? 40 : 150; // 加大基礎尺寸
         if (this.shapeType === 3) baseRad *= 1.1;
         this.radius = baseRad * scaleFactor * this.sizeVar;
     }
@@ -164,7 +164,7 @@ class Ball {
             this.radius += 0.015 * scaleFactor; // 每幀增長的尺寸
             
             // 設定手機與電腦不同的最大上限，避免球球大到擋住全螢幕
-            const maxRad = (window.innerWidth < 600 ? 65 : 80) * scaleFactor;
+            const maxRad = (window.innerWidth < 600 ? 75 : 90) * scaleFactor;
             if (this.radius > maxRad) this.radius = maxRad;
         }
 

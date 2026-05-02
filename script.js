@@ -316,11 +316,11 @@ function init() {
 
     // 啟動自動生成
     setInterval(() => {
-        if (balls.length < 20) {
+        if (balls.length < 10) {
             const stressWords = ["壓力好大", "爆炸吧！", "煩鼠了！", "極度 厭世"];
             balls.push(new Ball({ word: stressWords[Math.floor(Math.random() * stressWords.length)] }));
         }
-    }, 3000);
+    }, 6000);
 }
 
 // --- 啟動按鈕綁定 ---

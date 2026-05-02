@@ -5,7 +5,7 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 // --- 1. 配置與常數 ---
 const emotionMap = {
     "人生好難：D": "red" , "我想碎覺": "red" , "今天有點鼠...": "red", "腦袋登出ing": "red", "我好餓...": "red", "極度 厭世": "red", "腦袋空白": "red", "煩鼠了！": "red", "爆炸吧！": "red", "壓力好大": "red", "我好累！": "red", "想哭": "red",
-    "我是 南波萬！": "yellow", "我愛世界 世界愛我！": "yellow", "衝鴨！": "yellow", "積極 向上": "yellow", "超有元氣": "yellow", "滿血復活～": "yellow", "有小確辛～": "yellow", "我好開勳": "yellow", "有好事 發生:D": "yellow",
+    "我是南波萬！": "yellow", "我愛世界 世界愛我！": "yellow", "衝鴨！": "yellow", "積極 向上": "yellow", "超有元氣": "yellow", "滿血復活～": "yellow", "有小確辛～": "yellow", "我好開勳": "yellow", "有好事 發生:D": "yellow",
     "還撐得住": "green", "心悶悶": "green", "待機中...": "green",
     "卡卡不順": "green", "我是 鹹魚：D": "green", "今天不順：/": "green", "想當廢廢XD": "green"
 };
@@ -155,7 +155,7 @@ class Ball {
             this.radius += 0.05 * scaleFactor; // 每幀增長的尺寸
             
             // 設定手機與電腦不同的最大上限，避免球球大到擋住全螢幕
-            const maxRad = (window.innerWidth < 600 ? 80 : 180) * scaleFactor;
+            const maxRad = (window.innerWidth < 600 ? 50 : 120) * scaleFactor;
             if (this.radius > maxRad) this.radius = maxRad;
         }
 
@@ -307,7 +307,7 @@ function init() {
 
     // 啟動自動生成
     setInterval(() => {
-        if (balls.length < 50) {
+        if (balls.length < 40) {
             const stressWords = ["壓力好大", "爆炸吧！", "煩鼠了！", "極度 厭世"];
             balls.push(new Ball({ word: stressWords[Math.floor(Math.random() * stressWords.length)] }));
         }

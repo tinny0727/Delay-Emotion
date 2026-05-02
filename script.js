@@ -61,7 +61,7 @@ function resize() {
     if (width < 600) {
         scaleFactor = (width / 375) * 1.5;
     } else {
-        scaleFactor = Math.min(width, height) / 1300;
+        scaleFactor = Math.min(width, height) / 1000;
     }
     
     balls.forEach(ball => ball.recalculateSize());
@@ -93,7 +93,7 @@ class Ball {
     }
 
     recalculateSize() {
-        const isMobile = window.innerWidth < 600;
+        const isMobile = window.innerWidth < 1024;
         let baseRad = isMobile ? 40 : 150; // 加大基礎尺寸
         if (this.shapeType === 3) baseRad *= 1.1;
         this.radius = baseRad * scaleFactor * this.sizeVar;

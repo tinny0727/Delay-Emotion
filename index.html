@@ -2,51 +2,52 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>情緒詞彙互動遊戲</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mood Energy 能量貼紙</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-    <div id="jsContent">
- 
-</div>
-<div id="start-screen">
-    <div class="start-content">
-        <h1>情緒解壓縮</h1>
-        <p>傾斜手機即可控制情緒球流動</p>
-        <button id="start-btn">開始解壓</button>
-    </div>
-</div>
+    <div id="notebook">
+        <div class="paper-grid">
+            <h2 class="date-label">任務能量象限圖</h2>
+            
+            <div class="quadrant-background">
+                <div class="quad q1"><span>高能量 /重要 </span></div>
+                <div class="quad q2"><span>低能量 /重要 </span></div>
+                <div class="quad q3"><span>高能量 / 不重要 </span></div>
+                <div class="quad q4"><span>低能量 / 不重要</span></div>
+              
+       
+            </div>
 
-   <div class="stat-box">
-    <!-- 累積消滅區塊 -->
-    <div class="total-section">
-        <div class="total-label">總共消滅了</div>
-        <span id="global-count">0</span>
-        <span class="total-unit">個壓力</span>
+            <div id="sticker-canvas"></div>
+        </div>
+        
     </div>
-    
-    <!-- 細項指數區塊 -->
-    <div class="details-section">
-        <div class="stat-item">
-            <span class="dot red"></span>
-            <span class="label">高壓（焦慮/疲憊）：</span>
-            <span id="count-red">0</span>
-        </div>
-        <div class="stat-item">
-            <span class="dot green"></span>
-            <span class="label">平穩情緒：</span>
-            <span id="count-green">0</span>
-        </div>
-        <div class="stat-item">
-            <span class="dot yellow"></span>
-            <span class="label">執行高能：</span>
-            <span id="count-yellow">0</span>
-        </div>
-    </div>
-</div>
+    <div id="trash-can">拖曳至此刪除</div>
 
-    <canvas id="gameCanvas"></canvas>
+    <div id="sticker-tray">
+        <div class="tray-inner">
+            <div class="sticker-item" onclick="createSticker('high')">
+            <img src="分心.png" style="width: 30px; height: 30px; object-fit: contain;">
+        </div>
+              <div class="sticker-item" onclick="createSticker('anxi')">
+            <img src="焦慮.png" style="width: 30px; height: 30px; object-fit: contain;">
+        </div>
+         <div class="sticker-item" onclick="createSticker('lopie')">
+            <img src="內耗.png" style="width: 30px; height: 30px; object-fit: contain;">
+        </div>
+        <div class="sticker-item" onclick="createSticker('avoid')">
+            <img src="逃避.png" style="width: 30px; height: 30px; object-fit: contain;">
+        </div>
+         <div class="sticker-item" onclick="createSticker('perfy')">
+            <img src="IP(1).png" style="width: 30px; height: 30px; object-fit: contain;">
+        </div>
+           
+            <div class="sticker-item task-btn" onclick="createTaskSticker()">＋ 任務</div>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>

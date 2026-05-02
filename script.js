@@ -27,7 +27,6 @@ let gravityY = 0;
 
 // --- 2. 系統功能 ---
 function handleOrientation(event) {
-    // gamma: 左右傾斜, beta: 前後傾斜
     gravityX = (event.gamma || 0) * 0.08;
     gravityY = (event.beta || 0) * 0.08;
 }
@@ -57,11 +56,12 @@ function resize() {
     canvas.style.width = width + 'px';
     canvas.style.height = height + 'px';
     
-    // 手機版動態放大比例
     if (width < 600) {
-        scaleFactor = (width / 375) * 1.5;
+        // 修正手機版大小：調降至 1.15 倍縮放[cite: 3]
+        scaleFactor = (width / 375) * 1.15;
     } else {
-        scaleFactor = Math.min(width, height) / 1000;
+        // 修正電腦版大小：調降分母至 850 讓球變大[cite: 3]
+        scaleFactor = Math.min(width, height) / 850;
     }
     
     balls.forEach(ball => ball.recalculateSize());
@@ -73,16 +73,17 @@ class Ball {
     constructor(config) {
         this.word = config.word || "";
         this.type = emotionMap[this.word] || "default";
-        this.hp = this.type === "red" ? 2 : 1;
+        // 修改：黃球與紅球一樣具備 2 點生命值[cite: 3]
+        this.hp = (this.type === "red" || this.type === "yellow") ? 2 : 1;
         this.isClicked = false;
         this.sizeVar = 0.8 + Math.random() * 0.3;
         this.angle = Math.random() * Math.PI * 2;
         this.rotationSpeed = (Math.random() - 0.5) * 0.012;
 
         const shapeRoll = Math.random();
-        if (shapeRoll < 0.5) this.shapeType = 1; // 方塊
-        else if (shapeRoll < 0.75) this.shapeType = 0; // 圓形
-        else this.shapeType = 3; // 雲朵
+        if (shapeRoll < 0.5) this.shapeType = 1; 
+        else if (shapeRoll < 0.75) this.shapeType = 0; 
+        else this.shapeType = 3; 
 
         this.radius = 10;
         this.recalculateSize();
@@ -93,8 +94,9 @@ class Ball {
     }
 
     recalculateSize() {
-        const isMobile = window.innerWidth < 1024;
-        let baseRad = isMobile ? 40 : 150; // 加大基礎尺寸
+        // 將判斷寬度改為 768，讓平板更接近手機配置[cite: 3]
+        const isMobile = window.innerWidth < 768;
+        let baseRad = isMobile ? 38 : 65; 
         if (this.shapeType === 3) baseRad *= 1.1;
         this.radius = baseRad * scaleFactor * this.sizeVar;
     }
@@ -115,9 +117,11 @@ class Ball {
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
 
-        const isGlowing = this.isClicked || (this.type === "red" && this.hp === 1);
+        // 修改：黃球受傷時也會發光[cite: 3]
+        const isGlowing = this.isClicked || (this.hp === 1 && (this.type === "red" || this.type === "yellow"));
+        
         if (isGlowing) {
-            ctx.shadowBlur = 15 * scaleFactor;
+            ctx.shadowBlur = 20 * scaleFactor;
             ctx.shadowColor = colors[this.type];
             ctx.fillStyle = colors[this.type];
         } else {
@@ -144,64 +148,40 @@ class Ball {
         ctx.font = `bold ${fontSize}px "Microsoft JhengHei", sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        // 邏輯：將字串按「空格」拆分成陣列
+        
         const lines = this.word.split(" "); 
         const lineHeight = fontSize * 1.2;
-        
-        // 計算起始 Y 座標，讓多行文字能垂直置中
         const startY = -((lines.length - 1) * lineHeight) / 2;
         lines.forEach((line, index) => {
-      ctx.fillText(line, 0, startY + (index * lineHeight));
+            ctx.fillText(line, 0, startY + (index * lineHeight));
         });
-        // -------
         ctx.restore();
     }
 
    update() {
-        // --- 1. 紅球專屬膨脹邏輯 ---
-        // 只有紅球 (type === "red") 且 尚未被點擊過 (hp === 2) 時會持續長大
         if (this.type === "red" && this.hp === 2) {
-            this.radius += 0.015 * scaleFactor; // 每幀增長的尺寸
-            
-            // 設定手機與電腦不同的最大上限，避免球球大到擋住全螢幕
-            const maxRad = (window.innerWidth < 600 ? 75 : 100) * scaleFactor;
+            this.radius += 0.015 * scaleFactor; 
+            const maxRad = (window.innerWidth < 600 ? 65 : 120) * scaleFactor;
             if (this.radius > maxRad) this.radius = maxRad;
         }
 
-        // --- 2. 環境重力與阻力 ---
         this.dx += gravityX * 0.15;
         this.dy += gravityY * 0.15;
         this.dx *= 0.98;
         this.dy *= 0.98;
-
-        // 更新位置
         this.x += this.dx;
         this.y += this.dy;
 
-        // --- 3. 強力邊界偵測 (確保不跑出界外) ---
-        if (this.x - this.radius < 0) { 
-            this.x = this.radius; 
-            this.dx = Math.abs(this.dx) * 0.7; 
-        } else if (this.x + this.radius > window.innerWidth) { 
-            this.x = window.innerWidth - this.radius; 
-            this.dx = -Math.abs(this.dx) * 0.7; 
-        }
-
-        if (this.y - this.radius < 0) { 
-            this.y = this.radius; 
-            this.dy = Math.abs(this.dy) * 0.7; 
-        } else if (this.y + this.radius > window.innerHeight) { 
-            this.y = window.innerHeight - this.radius; 
-            this.dy = -Math.abs(this.dy) * 0.7; 
-        }
+        if (this.x - this.radius < 0) { this.x = this.radius; this.dx = Math.abs(this.dx) * 0.7; }
+        else if (this.x + this.radius > window.innerWidth) { this.x = window.innerWidth - this.radius; this.dx = -Math.abs(this.dx) * 0.7; }
+        if (this.y - this.radius < 0) { this.y = this.radius; this.dy = Math.abs(this.dy) * 0.7; }
+        else if (this.y + this.radius > window.innerHeight) { this.y = window.innerHeight - this.radius; this.dy = -Math.abs(this.dy) * 0.7; }
 
         this.angle += this.rotationSpeed;
         this.draw();
-    
     }
 }
 
-// --- 4. 粒子系統 ---
 class Particle {
     constructor(x, y, color) {
         this.x = x; this.y = y; this.color = color;
@@ -209,7 +189,7 @@ class Particle {
         this.speedX = (Math.random() - 0.5) * 8 * scaleFactor;
         this.speedY = (Math.random() - 0.5) * 8 * scaleFactor;
         this.alpha = 1;
-        this.decay = Math.random() * 0.02 + 0.015;
+        this.decay = Math.random() * 0.01 + 0.01; // 讓粒子顏色慢一點消失[cite: 3]
     }
     update() {
         this.x += this.speedX; this.y += this.speedY;
@@ -224,7 +204,6 @@ class Particle {
     }
 }
 
-// --- 5. 邏輯處理 ---
 function resolveCollisions() {
     for (let i = 0; i < balls.length; i++) {
         for (let j = i + 1; j < balls.length; j++) {
@@ -263,17 +242,19 @@ const handleAction = (clientX, clientY) => {
     
     for (let i = balls.length - 1; i >= 0; i--) {
         const ball = balls[i];
-        if (Math.hypot(ball.x - mouseX, ball.y - mouseY) < ball.radius) {
+        if (Math.hypot(ball.x - mouseX, ball.y - mouseY) < ball.radius + 5) {
             playPopSound();
-            if (ball.type === "red") {
+            // 修改：黃球與紅球現在都走「點兩下消失」邏輯[cite: 3]
+            if (ball.type === "red" || ball.type === "green") {
                 ball.hp -= 1;
-                for(let j=0; j<15; j++) particles.push(new Particle(ball.x, ball.y, colors.red));
+                for(let j=0; j<15; j++) particles.push(new Particle(ball.x, ball.y, colors[ball.type]));
                 if (ball.hp <= 0) {
-                    stats.red++; globalTotalDeleted++;
+                    stats[ball.type]++; globalTotalDeleted++;
                     balls.splice(i, 1);
                     updateDashboard();
                 }
             } else if (!ball.isClicked) {
+                // 綠球維持原本點亮 5 分鐘逻辑[cite: 3]
                 ball.isClicked = true;
                 stats[ball.type]++;
                 updateDashboard();
@@ -307,14 +288,10 @@ function animate() {
 
 function init() {
     resize();
-    balls = []; // 清空舊球
-    
-    // --- 1. 初始球數控制 ---
+    balls = [];
     const keys = Object.keys(emotionMap);
     const isMobile = window.innerWidth < 600;
-    
-    // 手機版初始先放 10 顆就好，電腦版全放
-    const initialCount = isMobile ? 10 : keys.length;
+    const initialCount = isMobile ? 12 : keys.length;
     const shuffled = keys.sort(() => 0.5 - Math.random());
     
     for (let i = 0; i < initialCount; i++) {
@@ -324,21 +301,18 @@ function init() {
     updateDashboard();
     animate();
 
-    // --- 2. 核心：增生系統 ---
-    // 每一段時間自動檢查，如果球太少就補新球
+    // 增生系統：確保球球會不斷長出來[cite: 3]
     setInterval(() => {
         const isMobile = window.innerWidth < 600;
-        const maxBalls = isMobile ? 20 : 50; // 手機版上限 20 顆，電腦版 45 顆
-        
+        const maxBalls = isMobile ? 22 : 45; 
         if (balls.length < maxBalls) {
-            // 隨機從所有情緒詞彙中挑一個出來增生
             const allWords = Object.keys(emotionMap);
             const randomWord = allWords[Math.floor(Math.random() * allWords.length)];
             balls.push(new Ball({ word: randomWord }));
         }
-    }, 3000); // 每 4 秒偵測一次是否要增生
+    }, 3500); 
 }
-// --- 啟動按鈕綁定 ---
+
 window.onload = () => {
     const startBtn = document.getElementById('start-btn');
     const startScreen = document.getElementById('start-screen');
@@ -346,8 +320,6 @@ window.onload = () => {
     if (startBtn) {
         startBtn.addEventListener('click', async () => {
             if (audioCtx.state === 'suspended') audioCtx.resume();
-
-            // iOS 權限
             if (typeof DeviceOrientationEvent !== 'undefined' && 
                 typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try {
@@ -357,9 +329,7 @@ window.onload = () => {
             } else {
                 window.addEventListener('deviceorientation', handleOrientation);
             }
-
             init();
-
             if (startScreen) {
                 startScreen.style.opacity = '0';
                 setTimeout(() => { startScreen.style.display = 'none'; }, 500);

@@ -160,7 +160,7 @@ class Ball {
 
    update() {
         if (this.type === "red" && this.hp === 2) {
-            this.radius += 0.015 * scaleFactor; 
+            this.radius += 0.035 * scaleFactor; 
             const maxRad = (window.innerWidth < 600 ? 65 : 120) * scaleFactor;
             if (this.radius > maxRad) this.radius = maxRad;
         }
@@ -310,7 +310,7 @@ function init() {
             const randomWord = allWords[Math.floor(Math.random() * allWords.length)];
             balls.push(new Ball({ word: randomWord }));
         }
-    }, 1000); 
+    }, 800); 
 }
 
 window.onload = () => {

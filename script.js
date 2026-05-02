@@ -164,7 +164,7 @@ class Ball {
             this.radius += 0.015 * scaleFactor; // 每幀增長的尺寸
             
             // 設定手機與電腦不同的最大上限，避免球球大到擋住全螢幕
-            const maxRad = (window.innerWidth < 600 ? 75 : 100) * scaleFactor;
+            const maxRad = (window.innerWidth < 600 ? 75 : 90) * scaleFactor;
             if (this.radius > maxRad) this.radius = maxRad;
         }
 
@@ -328,7 +328,7 @@ function init() {
     // 每一段時間自動檢查，如果球太少就補新球
     setInterval(() => {
         const isMobile = window.innerWidth < 600;
-        const maxBalls = isMobile ? 20 : 50; // 手機版上限 20 顆，電腦版 45 顆
+        const maxBalls = isMobile ? 20 : 30; // 手機版上限 20 顆，電腦版 45 顆
         
         if (balls.length < maxBalls) {
             // 隨機從所有情緒詞彙中挑一個出來增生

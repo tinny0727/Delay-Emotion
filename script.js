@@ -164,7 +164,7 @@ class Ball {
             this.radius += 0.015 * scaleFactor; // 每幀增長的尺寸
             
             // 設定手機與電腦不同的最大上限，避免球球大到擋住全螢幕
-            const maxRad = (window.innerWidth < 600 ? 75 : 90) * scaleFactor;
+            const maxRad = (window.innerWidth < 600 ? 65 : 80) * scaleFactor;
             if (this.radius > maxRad) this.radius = maxRad;
         }
 

@@ -94,7 +94,7 @@ class Ball {
 
     recalculateSize() {
         const isMobile = window.innerWidth < 600;
-        let baseRad = isMobile ? 35 : 150; // 加大基礎尺寸
+        let baseRad = isMobile ? 40 : 90; // 加大基礎尺寸
         if (this.shapeType === 3) baseRad *= 1.1;
         this.radius = baseRad * scaleFactor * this.sizeVar;
     }
@@ -282,7 +282,7 @@ const handleAction = (clientX, clientY) => {
                     ball.isClicked = false;
                     if (stats[ball.type] > 0) stats[ball.type]--;
                     updateDashboard();
-                }, 200000);
+                }, 300000);
             }
             return;
         }
@@ -336,7 +336,7 @@ function init() {
             const randomWord = allWords[Math.floor(Math.random() * allWords.length)];
             balls.push(new Ball({ word: randomWord }));
         }
-    }, 4000); // 每 4 秒偵測一次是否要增生
+    }, 3000); // 每 4 秒偵測一次是否要增生
 }
 // --- 啟動按鈕綁定 ---
 window.onload = () => {

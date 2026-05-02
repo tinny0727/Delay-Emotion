@@ -310,7 +310,7 @@ function init() {
             const randomWord = allWords[Math.floor(Math.random() * allWords.length)];
             balls.push(new Ball({ word: randomWord }));
         }
-    }, 3000); 
+    }, 2000); 
 }
 
 window.onload = () => {

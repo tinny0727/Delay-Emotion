@@ -1,3 +1,6 @@
+function backToHome() {
+    window.location.href = "https://tinny0727.github.io/Delay-home/"; 
+}
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
